@@ -1,4 +1,4 @@
-llimport pandas as pd
+import pandas as pd
 import numpy as np
 
 def get_ffme_returns():
@@ -31,13 +31,13 @@ def get_ind_file(filetype):
     known_types = ["returns", "nfirms", "size"]
     if filetype not in known_types:
         raise ValueError(f"filetype must be one of:{','.join(known_types)}")
-    if filetype is "returns":
+    if filetype == "returns":
         name = "vw_rets"
         divisor = 100
-    elif filetype is "nfirms":
+    elif filetype == "nfirms":
         name = "nfirms"
         divisor = 1
-    elif filetype is "size":
+    elif filetype == "size":
         name = "size"
         divisor = 1
                          
