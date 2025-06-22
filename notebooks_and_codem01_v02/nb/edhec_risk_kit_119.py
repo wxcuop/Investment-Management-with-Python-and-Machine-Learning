@@ -6,7 +6,7 @@ def get_ffme_returns():
     Load the Fama-French Dataset for the returns of the Top and Bottom Deciles by MarketCap
     """
     me_m = pd.read_csv("data/Portfolios_Formed_on_ME_monthly_EW.csv",
-                       header=0, index_col=0, na_values=-99.99)
+                       header=0, index_col=0, na_values="-99.99")
     rets = me_m[['Lo 10', 'Hi 10']]
     rets.columns = ['SmallCap', 'LargeCap']
     rets = rets/100
@@ -21,7 +21,7 @@ def get_hfi_returns():
     hfi = pd.read_csv("data/edhec-hedgefundindices.csv",
                       header=0, index_col=0, parse_dates=True)
     hfi = hfi/100
-    hfi.index = hfi.index.to_period('M')
+    hfi.index = hfi.index.to_period('M') # type: ignore
     return hfi
 
 def get_ind_file(filetype):
@@ -31,13 +31,13 @@ def get_ind_file(filetype):
     known_types = ["returns", "nfirms", "size"]
     if filetype not in known_types:
         raise ValueError(f"filetype must be one of:{','.join(known_types)}")
-    if filetype is "returns":
+    if filetype == "returns":
         name = "vw_rets"
         divisor = 100
-    elif filetype is "nfirms":
+    elif filetype == "nfirms":
         name = "nfirms"
         divisor = 1
-    elif filetype is "size":
+    elif filetype == "size":
         name = "size"
         divisor = 1
                          
@@ -74,7 +74,7 @@ def get_total_market_index_returns():
     ind_return = get_ind_returns()
     ind_mktcap = ind_nfirms * ind_size
     total_mktcap = ind_mktcap.sum(axis=1)
-    ind_capweight = ind_mktcap.divide(total_mktcap, axis="rows")
+    ind_capweight = ind_mktcap.divide(total_mktcap, axis="rows") # type: ignore
     total_market_return = (ind_capweight * ind_return).sum(axis="columns")
     return total_market_return
                          
@@ -154,7 +154,8 @@ def is_normal(r, level=0.01):
     if isinstance(r, pd.DataFrame):
         return r.aggregate(is_normal)
     else:
-        statistic, p_value = scipy.stats.jarque_bera(r)
+        jb_test = scipy.stats.jarque_bera(r)
+        p_value = jb_test.pvalue if hasattr(jb_test, 'pvalue') else jb_test[1]
         return p_value > level
 
 
