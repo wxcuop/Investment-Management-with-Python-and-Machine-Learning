@@ -6,7 +6,7 @@ def get_ffme_returns():
     Load the Fama-French Dataset for the returns of the Top and Bottom Deciles by MarketCap
     """
     me_m = pd.read_csv("data/Portfolios_Formed_on_ME_monthly_EW.csv",
-                       header=0, index_col=0, na_values=-99.99)
+                       header=0, index_col=0, na_values="-99.99")
     rets = me_m[['Lo 10', 'Hi 10']]
     rets.columns = ['SmallCap', 'LargeCap']
     rets = rets/100
@@ -40,19 +40,19 @@ def get_ind_file(filetype, weighting="vw", n_inds=30):
         weighting is one of "ew", "vw"
         number of inds is 30 or 49
     """    
-    if filetype is "returns":
+    if filetype == "returns":
         name = f"{weighting}_rets" 
         divisor = 100
-    elif filetype is "nfirms":
+    elif filetype == "nfirms":
         name = "nfirms"
         divisor = 1
-    elif filetype is "size":
+    elif filetype == "size":
         name = "size"
         divisor = 1
     else:
         raise ValueError(f"filetype must be one of: returns, nfirms, size")
     
-    ind = pd.read_csv(f"data/ind{n_inds}_m_{name}.csv", header=0, index_col=0, na_values=-99.99)/divisor
+    ind = pd.read_csv(f"data/ind{n_inds}_m_{name}.csv", header=0, index_col=0, na_values="-99.99")/divisor
     ind.index = pd.to_datetime(ind.index, format="%Y%m").to_period('M')
     ind.columns = ind.columns.str.strip()
     return ind
@@ -85,7 +85,7 @@ def get_ind_market_caps(n_inds=30, weights=False):
     ind_mktcap = ind_nfirms * ind_size
     if weights:
         total_mktcap = ind_mktcap.sum(axis=1)
-        ind_capweight = ind_mktcap.divide(total_mktcap, axis="rows")
+        ind_capweight = ind_mktcap.divide(total_mktcap, axis="index")
         return ind_capweight
     #else
     return ind_mktcap
@@ -147,7 +147,7 @@ def annualize_rets(r, periods_per_year):
 def annualize_vol(r, periods_per_year):
     """
     Annualizes the vol of a set of returns
-    We should infer the periods per year
+    We should infer the periods per_year
     but that is currently left as an exercise
     to the reader :-)
     """
@@ -169,15 +169,17 @@ def sharpe_ratio(r, riskfree_rate, periods_per_year):
 import scipy.stats
 def is_normal(r, level=0.01):
     """
-    Applies the Jarque-Bera test to determine if a Series is normal or not
-    Test is applied at the 1% level by default
-    Returns True if the hypothesis of normality is accepted, False otherwise
+    Applies the Jarque-Bera test to determine if a Series is normal or not.
+    Test is applied at the 1% level by default.
+    Returns True if the hypothesis of normality is accepted, False otherwise.
     """
     if isinstance(r, pd.DataFrame):
-        return r.aggregate(is_normal)
-    else:
+        return r.aggregate(is_normal, level=level)
+    elif isinstance(r, pd.Series):
         statistic, p_value = scipy.stats.jarque_bera(r)
         return p_value > level
+    else:
+        raise TypeError("Expected r to be a Series or DataFrame")
 
 
 def drawdown(return_series: pd.Series):
@@ -603,7 +605,7 @@ def weight_cw(r, cap_weights, **kwargs):
     """
     Returns the weights of the CW portfolio based on the time series of capweights
     """
-    w = cap_weights.loc[r.index[1]]
+    w = cap_weights.loc[r.index[0]]
     return w/w.sum()
 
 def backtest_ws(r, estimation_window=60, weighting=weight_ew, verbose=False, **kwargs):
